@@ -108,7 +108,8 @@ function screenshotTweet (client, id) {
     page.setViewport({ width: 1000, height: 600, deviceScaleFactor: 5 })
 
     page.goto(path.join('file://', __dirname, `index.html?id=${id}`), {
-      waitUntil: 'networkidle0' // ensures images are loaded
+      waitUntil: 'networkidle0', // ensures images are loaded
+      timeout: 0
     }).then(async () => {
       const rect = await page.evaluate(() => {
         const element = document.querySelector('#container')
