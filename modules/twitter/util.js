@@ -109,8 +109,10 @@ function screenshotTweet (client, id) {
 
     page.goto(path.join('file://', __dirname, `index.html?id=${id}`), {
       waitUntil: 'networkidle0', // ensures images are loaded
-      timeout: 0
-    }).then(async () => {
+      timeout: 120
+    }).then(cont).catch(cont)
+
+    async function cont () {
       const rect = await page.evaluate(() => {
         const element = document.querySelector('#container')
         const { x, y, width, height } = element.getBoundingClientRect()
@@ -129,9 +131,6 @@ function screenshotTweet (client, id) {
       await page.close()
       log(client, path.join('file://', __dirname, `index.html?id=${id}`))
       resolve(buffer)
-    }).catch(err => {
-      log(client, path.join('file://', __dirname, `index.html?id=${id}`))
-      log(client, err.stack)
-    })
+    }
   })
 }
