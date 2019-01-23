@@ -130,6 +130,6 @@ function screenshotTweet (client, id) {
       await page.close()
       log(client, path.join('file://', __dirname, `index.html?id=${id}`))
       resolve(buffer)
-    }, 2 * 60 * 1000)
+    }, 30 * 1000)
   })
 }
