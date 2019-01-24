@@ -10,6 +10,9 @@ module.exports = {
       db.prepare(
         'CREATE TABLE IF NOT EXISTS tweets (id TEXT, url TEXT, channel TEXT, PRIMARY KEY (id))'
       ).run()
+      client.channels
+        .find(c => c.name === 'tweet-approval')
+        .send(`Twitter service enabled`)
       resolve()
     })
   },
