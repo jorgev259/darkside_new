@@ -1,4 +1,4 @@
-let { twitter, stream } = require('./util.js')
+let { twitter, stream, remove } = require('./util.js')
 const { log } = require('../../utilities.js')
 let { screenshotTweet, queue } = require('./util.js')
 
@@ -9,7 +9,7 @@ module.exports = {
         'Adds a twitter account to a designated channel for automatic posting. Usage: >twitteradd [username] [channel]',
       async execute (client, msg, param, db) {
         if (!param[2]) {
-          return msg.channel.send('Usage: twitter add username channel')
+          return msg.channel.send('Usage: twitteradd username channel')
         }
         let username = param[1]
         let channel = param[2]
@@ -30,6 +30,34 @@ module.exports = {
               channel
             )
             msg.channel.send('Account added!')
+          })
+          .catch(err => {
+            console.log(err)
+            if (err.code === 50) return msg.channel.send('User not found')
+            log(client, err.message || err.stack)
+            msg.channel.send('Something went wrong!')
+          })
+      }
+    },
+
+    twitterremove: {
+      desc:
+        'Removes a twitter account from automatic posting. Usage: >twitterremove [username]',
+      async execute (client, msg, param, db) {
+        if (!param[2]) {
+          return msg.channel.send('Usage: twitterremove username')
+        }
+        let username = param[1]
+
+        twitter
+          .get('users/show', { screen_name: username })
+          .then(res => {
+            remove(res.data.id_str)
+            stream(client, db, [res.data.id_str])
+            db.prepare('DELETE FROM twitter WHERE id = ?').run(
+              res.data.id_str
+            )
+            msg.channel.send('Account removed!')
           })
           .catch(err => {
             console.log(err)

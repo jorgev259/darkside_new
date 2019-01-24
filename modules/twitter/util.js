@@ -30,7 +30,7 @@ module.exports = {
     ids.forEach(id => { streams[id] = stream })
 
     stream.on('tweet', async function (tweet) {
-      if (Object.keys(streams).includes(tweet.user.id_str) || tweet.retweeted) {
+      if (Object.keys(streams).includes(tweet.user.id_str)) {
         queue.add(() => screenshotTweet(client, tweet.id_str)).then(async shotBuffer => {
           let out = {}
 
@@ -98,6 +98,9 @@ module.exports = {
     stream.on('error', function (err) {
       log(client, err.message)
     })
+  },
+  remove (id) {
+    delete streams[id]
   }
 }
 
