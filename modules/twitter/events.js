@@ -10,9 +10,6 @@ module.exports = {
       db.prepare(
         'CREATE TABLE IF NOT EXISTS tweets (id TEXT, url TEXT, channel TEXT, PRIMARY KEY (id))'
       ).run()
-      client.channels
-        .find(c => c.name === 'tweet-approval')
-        .send(`Twitter service enabled`)
       resolve()
     })
   },
@@ -22,10 +19,11 @@ module.exports = {
         .prepare('SELECT id FROM twitter')
         .all()
         .map(r => r.id)
-
-      await client.channels
+      let tweetChannel = client.channels
         .find(c => c.name === 'tweet-approval')
-        .messages.fetch()
+
+      await tweetChannel.messages.fetch()
+      tweetChannel.send('Twitter service is up!')
       if (ids.length > 0) stream(client, db, ids)
     },
 
