@@ -7,7 +7,7 @@ const Twitter = require('twit')({
 })
 const puppeteer = require('puppeteer')
 const path = require('path')
-const fs = require('fs')
+// const fs = require('fs')
 const PQueue = require('p-queue')
 
 const queue = new PQueue({ concurrency: 1 })
@@ -15,7 +15,7 @@ const queue = new PQueue({ concurrency: 1 })
 let streams = {}
 const { log } = require('../../utilities.js')
 const { MessageEmbed } = require('discord.js')
-const { loadImage, createCanvas } = require('canvas')
+// const { loadImage, createCanvas } = require('canvas')
 
 let browser
 
@@ -47,7 +47,7 @@ module.exports = {
           embed.attachFiles([{ name: 'imageTweet.png', attachment: shotBuffer }])
             .setImage('attachment://imageTweet.png')
 
-          if (tweet.extended_entities && tweet.extended_entities.media) {
+          /* if (tweet.extended_entities && tweet.extended_entities.media) {
             let media = tweet.extended_entities.media.filter(e => e.type === 'photo').map(e => loadImage(e.media_url))
             if (media.length > 1) {
               let array = await Promise.all(media)
@@ -74,19 +74,19 @@ module.exports = {
                 out.files = [{ attachment: buf, name: 'images.png' }]
               }
             }
-          }
+          } */
 
-          let stmt = db.prepare('SELECT channel FROM twitter WHERE id=?')
+          let stmt = db.prepare('SELECT channel,guild FROM twitter WHERE id=?')
           out.embed = embed
 
           for (const row of stmt.iterate(tweet.user.id_str)) {
             embed.fields[1].value = `#${row.channel}`
 
-            client.channels.find(c => c.name === 'tweet-approval').send(out).then(m => {
+            client.guilds.get(row.guild).channels.find(c => c.name === 'tweet-approval').send(out).then(m => {
               m.react('✅').then(() => {
                 m.react('❎').then(() => {
                   m.react('❓').then(() => {
-                    db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, url, row.channel)
+                    db.prepare('INSERT INTO tweets (id,url,channel,guild) VALUES (?,?,?,?)').run(m.id, url, row.channel, m.guild.id)
                   })
                 })
               })

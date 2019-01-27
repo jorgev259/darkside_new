@@ -5,10 +5,10 @@ module.exports = {
   reqs (client, db) {
     return new Promise((resolve, reject) => {
       db.prepare(
-        'CREATE TABLE IF NOT EXISTS twitter (id TEXT, channel TEXT, PRIMARY KEY (id,channel))'
+        'CREATE TABLE IF NOT EXISTS twitter (id TEXT, guild TEXT, channel TEXT, PRIMARY KEY (id,channel,guild))'
       ).run()
       db.prepare(
-        'CREATE TABLE IF NOT EXISTS tweets (id TEXT, url TEXT, channel TEXT, PRIMARY KEY (id))'
+        'CREATE TABLE IF NOT EXISTS tweets (id TEXT, url TEXT, guild TEXT, channel TEXT, PRIMARY KEY (id))'
       ).run()
       resolve()
     })
@@ -19,12 +19,18 @@ module.exports = {
         .prepare('SELECT id FROM twitter')
         .all()
         .map(r => r.id)
-      let tweetChannel = client.channels
-        .find(c => c.name === 'tweet-approval')
 
-      await tweetChannel.messages.fetch()
-      tweetChannel.send('Twitter service is up!')
       if (ids.length > 0) stream(client, db, ids)
+
+      let guilds = db.prepare('SELECT guild FROM twitter GROUP BY guild').all()
+      let tasks = guilds.map(row => new Promise(async (resolve, reject) => {
+        let tweetChannel = client.guilds.get(row.guild).channels.find(c => c.name === 'tweet-approval')
+        await tweetChannel.send('Twitter service is up!')
+        await tweetChannel.messages.fetch()
+        resolve()
+      }))
+
+      await Promise.all(tasks)
     },
 
     async messageReactionAdd (client, db, reaction, user) {
@@ -40,17 +46,16 @@ module.exports = {
             embed.setFooter(`Accepted by ${user}`)
             let url = ''
             let msgs = db
-              .prepare('SELECT channel,url FROM tweets WHERE id=?')
-              .all(reaction.message.id)
+              .prepare('SELECT channel,url FROM tweets WHERE id=? AND guild=?')
+              .all(reaction.message.id, reaction.message.guild.id)
               .map(row => {
-                return client.channels
-                  .find(c => c.name === row.channel)
+                return reaction.message.guild.channels.get(row.channel)
                   .send({ content: `<${row.url}>`, files: [`temp/${row.url.split('/').slice(-2)[0]}.png`] })
               })
 
             Promise.all(msgs).catch(err => {
               console.log(err)
-              client.channels
+              reaction.message.guild.channels
                 .find(c => c.name === 'tweet-approval-log')
                 .send(`A message couldnt be send in some channels. URL: ${url}`)
             })
@@ -83,11 +88,11 @@ module.exports = {
                 embed.setFooter(`Accepted by ${user}`)
 
                 let url = db
-                  .prepare('SELECT channel,url FROM tweets WHERE id=?')
-                  .all(reaction.message.id)[0].url
+                  .prepare('SELECT channel,url FROM tweets WHERE id=? AND guild=?')
+                  .all(reaction.message.id, reaction.message.guild.id)[0].url
                 channel.send(url).catch(err => {
                   console.log(err)
-                  client.channels
+                  reaction.message.guild.channels
                     .find(c => c.name === 'tweet-approval-log')
                     .send(
                       `A message couldnt be send in some channels. URL: ${url}`
@@ -106,9 +111,9 @@ module.exports = {
 }
 
 function sendLog (client, db, reaction, embed, channelName) {
-  db.prepare('DELETE FROM tweets WHERE id=?').run(reaction.message.id)
+  db.prepare('DELETE FROM tweets WHERE id=? AND guild=?').run(reaction.message.id, reaction.message.guild.id)
 
   embed.setTimestamp()
-  client.channels.find(c => c.name === channelName).send(embed)
+  reaction.message.guild.channels.find(c => c.name === channelName).send(embed)
   reaction.message.delete()
 }

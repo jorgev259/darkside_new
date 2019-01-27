@@ -15,9 +15,9 @@ module.exports = {
         let channel = param[2]
 
         if (msg.mentions.channels.size > 0) {
-          channel = msg.mentions.channels.first().name
+          channel = msg.mentions.channels.first().id
         }
-        if (!msg.guild.channels.some(c => c.name === channel)) {
+        if (!msg.guild.channels.get(channel)) {
           return msg.channel.send('Channel doesnt exist')
         }
 
@@ -25,9 +25,10 @@ module.exports = {
           .get('users/show', { screen_name: username })
           .then(res => {
             stream(client, db, [res.data.id_str])
-            db.prepare('INSERT INTO twitter (id,channel) VALUES (?,?)').run(
+            db.prepare('INSERT INTO twitter (id,channel,guild) VALUES (?,?,?)').run(
               res.data.id_str,
-              channel
+              channel,
+              msg.guild.id
             )
             msg.channel.send('Account added!')
           })
@@ -54,8 +55,9 @@ module.exports = {
           .then(res => {
             remove(res.data.id_str)
             stream(client, db, [res.data.id_str])
-            db.prepare('DELETE FROM twitter WHERE id = ?').run(
-              res.data.id_str
+            db.prepare('DELETE FROM twitter WHERE id = ? AND guild=?').run(
+              res.data.id_str,
+              msg.guild.id
             )
             msg.channel.send('Account removed!')
           })
@@ -82,23 +84,21 @@ module.exports = {
             let m = collected.first()
             if (m.content.toLowerCase() === 'yes') {
               let purge = await m.channel.send('Starting purge')
-              let channel1 = client.channels.find(
+              let channel1 = m.guild.channels.find(
                 c => c.name === 'tweet-approval'
               )
               let channel2 = await channel1.clone()
               await channel1.delete()
 
-              db.prepare('DELETE FROM tweets').run()
+              db.prepare('DELETE FROM tweets WHERE guild=?').run(m.guild.id)
               purge.edit('Purge complete')
 
-              let position =
-                client.channels.find(c => c.name === 'tweet-approval-log')
-                  .rawPosition
+              let position = m.guild.channels.find(c => c.name === 'tweet-approval-log').rawPosition
 
               await channel2.edit({
                 position: position
               })
-              client.channels
+              m.guild.channels
                 .find(c => c.name === 'tweet-approval-log')
                 .send(`#tweet-approval cleared by ${msg.author}`)
             } else {

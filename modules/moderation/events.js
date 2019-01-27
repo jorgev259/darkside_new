@@ -1,12 +1,12 @@
-let lastID = ''
+let lastID = {}
 
 module.exports = {
   events: {
     async ready (client, db) {
-      let log = (await client.guilds
-        .first()
-        .fetchAuditLogs({ limit: 1, type: 72 })).entries.first()
-      lastID = log.id
+      client.guilds.each(async guild => {
+        let log = (await guild.fetchAuditLogs({ limit: 1, type: 72 })).entries.first()
+        lastID[guild.id] = log.id
+      })
 
       // client.channels.find(c => c.name === 'admin').send('Killer of wonder has restarted!')
     },
@@ -17,8 +17,8 @@ module.exports = {
         type: 72
       })).entries.first()
 
-      if (log.id !== lastID) {
-        lastID = log.id
+      if (log.id !== lastID[m.guild.id]) {
+        lastID[m.guild.id] = log.id
         let embed = {
           embed: {
             description: `${log.executor.tag} deleted a message from ${
