@@ -5,6 +5,7 @@ const Twitter = require('twit')({
   access_token: '858864621893058560-KImtTaWcQDMPkhKE6diK6QUQJOIeCt9',
   access_token_secret: 'pBkS7T83E4924krvkigXcHvk2dvitbCq6f2l6BzyDCeOH'
 })
+
 const puppeteer = require('puppeteer')
 const path = require('path')
 // const fs = require('fs')
@@ -80,7 +81,7 @@ module.exports = {
           out.embed = embed
 
           for (const row of stmt.iterate(tweet.user.id_str)) {
-            console.log(row)
+            log(JSON.stringify(row))
             embed.fields[1].value = `#${client.guilds.get(row.guild).channels.get(row.channel).name}`
 
             client.guilds.get(row.guild).channels.find(c => c.name === 'tweet-approval').send(out).then(m => {
