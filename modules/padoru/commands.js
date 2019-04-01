@@ -45,7 +45,7 @@ module.exports = {
       desc: 'Send Gjallardoodles to someone else!',
       usage: '>send @user',
       execute (client, msg, param, db) {
-        if(moment().month() != 11) return msg.channel.send('The dawning has gone by. The oven fire is down until further notice')
+        if (moment().month() !== 11) return msg.channel.send('The dawning has gone by. The oven fire is down until further notice')
         if (msg.mentions.members.size === 0) {
           return msg.channel.send(
             'You need to mention who you want to send Gjllardoodles to!'
